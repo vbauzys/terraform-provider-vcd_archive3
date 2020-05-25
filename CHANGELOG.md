@@ -2,6 +2,7 @@
 FEATURES:
 
 * **New Resource:** `resource/vcd_vapp_firewall_rules` vApp network firewall rules [GH-511]
+* **New Resource:** `resource/vcd_vapp_nat_rules` vApp network NAT rules [GH-518]
 
 IMPROVEMENTS:
 
@@ -13,6 +14,10 @@ IMPROVEMENTS:
 * Add support for SAML auth with Active Directory Federation Services (ADFS) as IdP using
   "/adfs/services/trust/13/usernamemixed" endpoint usin auth_type="saml_adfs". [GH-504]
 * Add support for LDAP authentication using auth_type="integrated". [GH-504]
+
+BUG FIXES:
+* `resource/vcd_vapp_vm` and `datasource/vcd_vapp_vm` can report `network.X.is_primary` attribute
+  incorrectly when VM is imported to Terraform and NIC indexes in vCD do not start with 0. [GH-512] 
 
 NOTES:
 
