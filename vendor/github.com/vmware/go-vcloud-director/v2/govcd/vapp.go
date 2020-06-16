@@ -991,8 +991,7 @@ func (vapp *VApp) UpdateNetworkAsync(networkSettingsToUpdate *VappNetworkSetting
 			if err != nil {
 				return Task{}, err
 			}
-
-			if uuid == networkSettingsToUpdate.ID {
+			if uuid == extractUuid(networkSettingsToUpdate.ID) {
 				networkToUpdate = networkConfig
 				networkToUpdateIndex = index
 				break
@@ -1114,7 +1113,7 @@ func (vapp *VApp) UpdateOrgNetworkAsync(networkSettingsToUpdate *VappNetworkSett
 				return Task{}, err
 			}
 
-			if uuid == networkSettingsToUpdate.ID {
+			if uuid == extractUuid(networkSettingsToUpdate.ID) {
 				networkToUpdate = networkConfig
 				networkToUpdateIndex = index
 				break
@@ -1129,9 +1128,24 @@ func (vapp *VApp) UpdateOrgNetworkAsync(networkSettingsToUpdate *VappNetworkSett
 	fenceMode := types.FenceModeBridged
 	if isFenced {
 		fenceMode = types.FenceModeNAT
-		networkToUpdate.Configuration.Features = &types.NetworkFeatures{
-			FirewallService: &types.FirewallService{IsEnabled: *networkSettingsToUpdate.FirewallEnabled},
-			NatService:      &types.NatService{IsEnabled: *networkSettingsToUpdate.NatEnabled, NatType: "ipTranslation", Policy: "allowTrafficIn"}}
+		// If existing vApp Org network
+		if networkToUpdate.Configuration.Features != nil {
+			if networkToUpdate.Configuration.Features.FirewallService != nil {
+				networkToUpdate.Configuration.Features.FirewallService.IsEnabled = *networkSettingsToUpdate.FirewallEnabled
+			} else {
+				networkToUpdate.Configuration.Features.FirewallService = &types.FirewallService{IsEnabled: *networkSettingsToUpdate.FirewallEnabled}
+			}
+			if networkToUpdate.Configuration.Features.NatService != nil {
+				networkToUpdate.Configuration.Features.NatService.IsEnabled = *networkSettingsToUpdate.NatEnabled
+			} else {
+				networkToUpdate.Configuration.Features.NatService = &types.NatService{IsEnabled: *networkSettingsToUpdate.NatEnabled, NatType: "ipTranslation", Policy: "allowTrafficIn"}
+			}
+		} else {
+			// If new vApp Org network
+			networkToUpdate.Configuration.Features = &types.NetworkFeatures{
+				FirewallService: &types.FirewallService{IsEnabled: *networkSettingsToUpdate.FirewallEnabled},
+				NatService:      &types.NatService{IsEnabled: *networkSettingsToUpdate.NatEnabled, NatType: "ipTranslation", Policy: "allowTrafficIn"}}
+		}
 	}
 
 	networkToUpdate.Configuration.RetainNetInfoAcrossDeployments = networkSettingsToUpdate.RetainIpMacEnabled
@@ -1204,7 +1218,7 @@ func (vapp *VApp) RemoveNetworkAsync(identifier string) (Task, error) {
 		if err != nil {
 			return Task{}, fmt.Errorf("unable to get network ID from HREF: %s", err)
 		}
-		if networkId == identifier || networkConfig.NetworkName == identifier {
+		if networkId == extractUuid(identifier) || networkConfig.NetworkName == identifier {
 			deleteUrl := vapp.client.VCDHREF.String() + "/network/" + networkId
 			errMessage := fmt.Sprintf("detaching vApp network %s (id '%s'): %%s", networkConfig.NetworkName, networkId)
 			task, err := vapp.client.ExecuteTaskRequest(deleteUrl, http.MethodDelete, types.AnyXMLMime, errMessage, nil)
