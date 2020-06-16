@@ -1,4 +1,4 @@
-// +build functional gateway ALL
+// +build functional vapp ALL
 
 package vcd
 
@@ -40,6 +40,7 @@ func TestAccVcdVappFirewallRules(t *testing.T) {
 		"VmName1":       vmName1,
 		"VmName2":       vmName2,
 		"VmName3":       vmName3,
+		"Tags":          "vapp",
 	}
 	configText := templateFill(testAccVcdVappFirewallRules_rules, params)
 	params["FuncName"] = t.Name() + "-step2"
@@ -117,14 +118,14 @@ func TestAccVcdVappFirewallRules(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateIdFunc:       importStateVappFirewallRuleObject(testConfig, vappName, vappNetworkName),
-				ImportStateVerifyIgnore: []string{"network_id", "org", "vdc"},
+				ImportStateVerifyIgnore: []string{"org", "vdc"},
 			},
 			resource.TestStep{ // Step 2 - resource import by ID
 				ResourceName:            "vcd_vapp_firewall_rules.imported2",
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateIdFunc:       importStateVappFirewallRuleById(testConfig, resourceName),
-				ImportStateVerifyIgnore: []string{"network_id", "org", "vdc"},
+				ImportStateVerifyIgnore: []string{"org", "vdc"},
 			},
 			resource.TestStep{ // Step 3 - update
 				Config: configTextForUpdate,
