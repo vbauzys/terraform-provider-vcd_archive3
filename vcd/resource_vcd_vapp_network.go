@@ -93,15 +93,15 @@ func resourceVcdVappNetwork() *schema.Resource {
 			},
 			"firewall_enabled": {
 				Type:        schema.TypeBool,
-				Optional:    true,
 				Computed:    true,
-				Description: "firewall service enabled or disabled",
+				Description: "firewall service enabled or disabled. Default is true",
+				Removed:     "Was incorrectly added and would collide with the depending resource. Now moved to vcd_vapp_firewall_rules.enabled",
 			},
 			"nat_enabled": {
 				Type:        schema.TypeBool,
-				Optional:    true,
 				Computed:    true,
-				Description: "NAT service enabled or disabled",
+				Description: "NAT service enabled or disabled. Default is true",
+				Removed:     "Was incorrectly added and would collide with the depending resource. Now moved to vcd_vapp_nat_rules.enabled",
 			},
 			"retain_ip_mac_enabled": {
 				Type:        schema.TypeBool,
@@ -199,8 +199,6 @@ func resourceVappNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 		DNS2:               d.Get("dns2").(string),
 		DNSSuffix:          d.Get("dns_suffix").(string),
 		StaticIPRanges:     staticIpRanges.IPRange,
-		NatEnabled:         takeBoolPointer(d.Get("nat_enabled").(bool)),
-		FirewallEnabled:    takeBoolPointer(d.Get("firewall_enabled").(bool)),
 		RetainIpMacEnabled: takeBoolPointer(d.Get("retain_ip_mac_enabled").(bool)),
 	}
 
@@ -370,16 +368,6 @@ func genericVappNetworkRead(d *schema.ResourceData, meta interface{}, origin str
 		} else {
 			_ = d.Set("org_network_name", nil)
 		}
-		if config.Features != nil && config.Features.FirewallService != nil {
-			_ = d.Set("firewall_enabled", vAppNetwork.Configuration.Features.FirewallService.IsEnabled)
-		} else {
-			_ = d.Set("firewall_enabled", nil)
-		}
-		if config.Features != nil && config.Features.NatService != nil {
-			_ = d.Set("nat_enabled", config.Features.NatService.IsEnabled)
-		} else {
-			_ = d.Set("nat_enabled", nil)
-		}
 		_ = d.Set("retain_ip_mac_enabled", config.RetainNetInfoAcrossDeployments)
 	}
 	return nil
@@ -415,8 +403,6 @@ func resourceVappNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 		DNS2:               d.Get("dns2").(string),
 		DNSSuffix:          d.Get("dns_suffix").(string),
 		StaticIPRanges:     staticIpRanges.IPRange,
-		NatEnabled:         takeBoolPointer(d.Get("nat_enabled").(bool)),
-		FirewallEnabled:    takeBoolPointer(d.Get("firewall_enabled").(bool)),
 		RetainIpMacEnabled: takeBoolPointer(d.Get("retain_ip_mac_enabled").(bool)),
 	}
 
@@ -554,5 +540,5 @@ func resourceVcdDhcpPoolHash(v interface{}) int {
 
 // Allows to identify if vApp Org network and not vApp network
 func isVappOrgNetwork(networkConfig *types.VAppNetworkConfiguration) bool {
-	return !isVappNetwork(networkConfig)
+	return !govcd.IsVappNetwork(networkConfig.Configuration)
 }
